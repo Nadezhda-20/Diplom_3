@@ -1,13 +1,16 @@
 import allure
+import pytest
+
 from pages.constructor_page import ConstructorPage
+
 
 @allure.epic("Stellar Burgers UI")
 @allure.feature("Конструктор")
 class TestConstructor:
-    @allure.title("Проверка: переключение с раздела «Соусы» на раздел «Булки»" )
+    @allure.title("Проверка: переключение на раздел «Булки» с раздела «Соусы»")
     @allure.description(
-        "Открыта главная страница на разделе «Булки» проверяем переход на раздел «Соусы» и обратно "
-        "Проверяем наличие активного CSS-класса у вкладки"
+        "При открытии главной страницы переключаемся на «Соусы» и обратно на «Булки». "
+        "Проверяем, что активной становится вкладка «Булки»."
     )
     def test_buns_active_on_load(self, driver):
         constructor = ConstructorPage(driver)
@@ -21,32 +24,22 @@ class TestConstructor:
 
         assert constructor.is_buns_tab_active(), "Вкладка «Булки» не стала активной"
 
-    @allure.title("Переключение на раздел «Соусы»")
-    @allure.description(
-        "Переключение с раздела «Булки» на раздел «Соусы» происходит"
-        "Проверяется, что вкладка «Соусы» становится активной после таба"
+    @pytest.mark.parametrize(
+        "tab_name, click_tab, wait_active, is_active",
+        [
+            ("Соусы", ConstructorPage.click_sauces_tab, ConstructorPage.wait_for_sauces_active, ConstructorPage.is_sauces_tab_active),
+            ("Начинки", ConstructorPage.click_fillings_tab, ConstructorPage.wait_for_fillings_active, ConstructorPage.is_fillings_tab_active),
+        ],
+        ids=["switch_to_sauces", "switch_to_fillings"],
     )
-    def test_switch_sauces(self, driver):
+    @allure.title("Переключение вкладок конструктора")
+    @allure.description("Проверка, что после клика соответствующая вкладка становится активной.")
+    def test_switch_tabs(self, driver, tab_name, click_tab, wait_active, is_active):
         constructor = ConstructorPage(driver)
 
-        with allure.step("Переключиться на вкладку «Соусы»"):
+        with allure.step(f"Переключиться на вкладку «{tab_name}»"):
             constructor.wait_for_enter_account_button()
-            constructor.click_sauces_tab()
-            constructor.wait_for_sauces_active(15)
+            click_tab(constructor)
+            wait_active(constructor, 15)
 
-        assert constructor.is_sauces_tab_active(), "Вкладка «Соусы» не стала активной"
-
-    @allure.title("Переключение на раздел «Начинки»")
-    @allure.description(
-        "Пользователь может переключиться на раздел «Начинки»"
-        "Проверяется, что вкладка «Начинки» становится активной после таба"
-    )
-    def test_switch_fillings(self, driver):
-        constructor = ConstructorPage(driver)
-
-        with allure.step("Переключиться на вкладку «Начинки»"):
-            constructor.wait_for_enter_account_button()
-            constructor.click_fillings_tab()
-            constructor.wait_for_fillings_active(15)
-
-        assert constructor.is_fillings_tab_active(), "Вкладка «Начинки» не стала активной"
+        assert is_active(constructor), f"Вкладка «{tab_name}» не стала активной"

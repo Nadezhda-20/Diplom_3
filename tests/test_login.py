@@ -54,8 +54,8 @@ class TestLogin:
         profile = MainPage(driver)
         profile.wait_profile_page_load()
 
-        "Email в профиле не совпадает с зарегистрированным"
-        assert profile.get_email_value().lower() == api_user.email.lower()
+        assert profile.get_email_value().lower() == api_user.email.lower(), "Email в профиле не совпадает с зарегистрированным"
+
 
     @allure.title("Позитивный тест на вход по ссылке в форме регистрации")
     @allure.description("Создание пользователя через API, переход на регистрацию, затем «Уже зарегистрированы? Войти», логин, проверка email")
@@ -85,8 +85,8 @@ class TestLogin:
         profile = MainPage(driver)
         profile.wait_profile_page_load()
 
-        "Email в профиле не совпадает с зарегистрированным"
-        assert profile.get_email_value().lower() == api_user.email.lower()
+        assert profile.get_email_value().lower() == api_user.email.lower(), "Email в профиле не совпадает с зарегистрированным"
+
 
     @allure.title("Позитивный тест на вход по ссылке в форме восстановления пароля")
     @allure.description("Создание пользователя через API, переход на восстановление, затем «Войти», логин, проверка email")
@@ -116,5 +116,5 @@ class TestLogin:
         profile = MainPage(driver)
         profile.wait_profile_page_load()
 
-        "Email в профиле не совпадает с зарегистрированным"
-        assert profile.get_email_value().lower() == api_user.email.lower()
+        assert profile.get_email_value().lower() == api_user.email.lower(), "Email в профиле не совпадает с зарегистрированным"
+
