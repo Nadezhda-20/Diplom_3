@@ -20,3 +20,4 @@ selenium/
 geckodriver.log
 chromedriver.log
 allure-results/
+allure-report/
