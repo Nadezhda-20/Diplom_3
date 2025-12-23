@@ -1,27 +1,50 @@
-# Diplom_3 — Stellar Burgers UI autotests
-
-UI автотесты для Stellar Burgers: https://stellarburgers.education-services.ru
-
-## Стек
-- Python + pytest
-- Selenium
-- Allure
-
-## Структура
-- `tests/` — тесты
-- `pages/` — Page Objects
-- `locators/` — локаторы (1:1 со страницами)
-- `utils/` — константы/фабрика драйверов
-- `api/` — API шаги (создание/удаление тестового пользователя)
-- `data/` — тестовые данные
-
-## Установка
-```bash
-python -m venv venv
-# Windows
-venv\Scripts\activate
-# Linux/Mac
-source venv/bin/activate
-
-pip install -r requirements.txt
 # Diplom_3
+
+## Дипломный проект. Задание 3: Веб-приложение
+
+### Автотесты для проверки веб приложения Stellar Burgers.
+
+### Реализованные сценарии
+
+Основная функциональность:
+* переход по клику на «Конструктор»;
+* переход по клику на раздел «Лента заказов»;
+* при клике на ингредиент, появляется всплывающее окно с деталями;
+* всплывающее окно закрывается кликом по крестику;
+* при добавлении ингредиента в заказ счётчик этого ингредиента увеличивается.
+
+Раздел «Лента заказов»:
+* при создании нового заказа счётчик «Выполнено за всё время» увеличивается;
+* при создании нового заказа счётчик «Выполнено за сегодня» увеличивается;
+* после оформления заказа его номер появляется в разделе «В работе».
+
+### Структура проекта
+
+- locators - пакет, содержащий локаторы для каждой страницы
+- pages - пакет, содержащий Page Object для каждой страницы, разделенные по классам
+- tests - пакет, содержащий тесты, разделенные по классам
+- api_client.py - клиент для работы с API (создание/удаление пользователя, создание заказа)
+- conftest.py - фикстуры проекта
+- data.py - файл со статическими данными
+- pytest.ini - настройки pytest
+- requirements.txt - зависимости проекта
+- driver_factory.py - вспомогательные статические методы проекта
+- allure_results - отчет allure
+
+**Установка зависимостей**
+
+> `$ pip install -r requirements.txt`
+
+**Запуск тестов для браузера Chrome**
+
+> `$ pytest tests --browser=chrome --alluredir=allure_results_chrome`
+
+**Запуск тестов для браузера Firefox**
+
+> `$ pytest tests --browser=firefox --alluredir=allure_results_firefox`
+
+**Получение отчетов Allure**
+
+> `$ allure serve allure_results_chrome`
+> 
+> `$ allure serve allure_results_firefox`

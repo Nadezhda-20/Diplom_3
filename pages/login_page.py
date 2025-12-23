@@ -1,30 +1,33 @@
-from __future__ import annotations
-import allure
 from locators.login_page_locators import LoginPageLocators
 from pages.base_page import BasePage
+import allure
+from data import Urls
 
 class LoginPage(BasePage):
+
     def __init__(self, driver):
         super().__init__(driver)
-        self.wait_for_page_load()
 
-    @allure.step("Ожидание загрузки страницы «Вход»")
-    def wait_for_page_load(self) -> None:
-        self.wait_visible(LoginPageLocators.HEADING, timeout=15)
+    @allure.step('Ожидание появления заголовка Вход')
+    def login_header_wait(self):
+       self.wait_visibility_of_element(LoginPageLocators.login_header)
 
-    @allure.step("Ввод данных пользователя: email {email} и пароль {password}")
-    def enter_credentials(self, email: str, password: str) -> None:
-        self.type(LoginPageLocators.EMAIL_FIELD, email)
-        self.type(LoginPageLocators.PASSWORD_FIELD, password)
+    @allure.step('Переход на страницу Авторизации')
+    def transfer_to_login_page(self):
+        self.change_url(Urls.LOGIN)
+        self.login_header_wait()
 
-    @allure.step("Нажатие на кнопку «Войти»")
-    def click_enter_button(self) -> None:
-        self.click(LoginPageLocators.ENTER_BUTTON)
+    @allure.step('Ожидание кликабельности кнопки Восстановить пароль')
+    def restore_password_link_wait(self):
+        self.wait_clickability_of_element(LoginPageLocators.restore_password_link)
 
-    @allure.step("Переход по ссылке «Зарегистрироваться»")
-    def click_registration_link(self) -> None:
-        self.click(LoginPageLocators.REGISTRATION_LINK)
+    @allure.step('Клик по кнопке Восстановить пароль')
+    def restore_password_link_click(self):
+        self.restore_password_link_wait()
+        self.click_on_element(LoginPageLocators.restore_password_link)
 
-    @allure.step("Переход по ссылке «Восстановить пароль»")
-    def click_recover_password_link(self) -> None:
-        self.click(LoginPageLocators.RECOVER_PASSWORD_LINK)
+    @allure.step('Проверка перехода на страницу Авторизации')
+    def check_login_page_transfer(self):
+        self.login_header_wait()
+        current_url = self.get_current_url()
+        assert current_url == Urls.LOGIN, f'Смена страницы не произошла: {current_url}'

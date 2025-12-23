@@ -1,89 +1,93 @@
-from __future__ import annotations
 import pytest
 import allure
 
-from api.user_steps import UserSteps
-from data.test_data import generate_api_user_data, generate_user_data
-from models.user import User
-from pages.constructor_page import ConstructorPage
-from pages.login_page import LoginPage
-from utils.constants import BASE_URL, LOGIN_PAGE_URL
-from utils.driver_factory import create_driver
-
+from pages.base_page import BasePage
+from data import Urls
+from api_client import User, Order
+from driver_factory import create_driver
 
 def pytest_addoption(parser):
-    parser.addoption("--browser", action="store", default="chrome", help="chrome|firefox")
-
-@pytest.fixture
-def browser(request) -> str:
-    return request.config.getoption("--browser")
-
-@pytest.fixture
-def driver(browser):
-    driver = create_driver(browser)
-    driver.get(BASE_URL)
-    yield driver
-    driver.quit()
-
-@pytest.fixture
-def api_user():
-
-    steps = UserSteps()
-    name, email, password = generate_api_user_data()
-    user = User(email=email, password=password, name=name)
-
-    with allure.step("Создание пользователя через API"):
-        response = steps.create_user(user)
-        assert response.status_code == 200, f"API register failed: {response.status_code} {response.text}"
-        user.access_token = steps.extract_access_token(response)
-
-    yield user
-
-    with allure.step("Удаление пользователя через API"):
-        delete_response = steps.delete_user(user)
-        assert delete_response.status_code in (200, 202), f"API delete failed: {delete_response.status_code} {delete_response.text}"
-
-@pytest.fixture
-def register_ui_data():
-    name, email, correct_password, wrong_password = generate_user_data()
-    return {
-        "name": name,
-        "email": email,
-        "correct_password": correct_password,
-        "wrong_password": wrong_password,
-    }
-
-@pytest.fixture
-def cleanup_user_by_api(request, register_ui_data):
-    steps = UserSteps()
-    user = User(
-        email=register_ui_data["email"],
-        password=register_ui_data["correct_password"],
-        name=register_ui_data["name"],
+    parser.addoption(
+        "--browser",
+        action="store",
+        default="chrome",
+        help="Browser to run tests on (chrome/firefox)",
+    )
+    parser.addoption(
+        "--headless",
+        action="store_true",
+        default=False,
+        help="Run tests in headless mode",
     )
 
-    def fin():
-        if user.access_token:
-            steps.delete_user(user)
+def _create_driver(browser: str, headless: bool):
+    browser = (browser or "chrome").strip().lower()
+    if not headless:
+        return create_driver(browser)
 
-    request.addfinalizer(fin)
-    return user
+    if browser == "chrome":
+        from selenium import webdriver
+        from selenium.webdriver.chrome.options import Options as ChromeOptions
 
+        options = ChromeOptions()
+        options.add_argument("--remote-allow-origins=*")
 
+        options.add_argument("--headless=new")
+        options.add_argument("--window-size=1920,1080")
+        options.add_argument("--disable-gpu")
+        options.add_argument("--no-sandbox")
+        return webdriver.Chrome(options=options)
+
+    if browser == "firefox":
+        from selenium import webdriver
+        from selenium.webdriver.firefox.options import Options as FirefoxOptions
+
+        options = FirefoxOptions()
+        options.add_argument("--headless")
+        return webdriver.Firefox(options=options)
+
+    raise ValueError(f"Unsupported browser: {browser}. Supported: chrome, firefox")
+
+@allure.step("Создание драйвера.")
 @pytest.fixture
-def logged_in_driver(driver, api_user):
-    constructor = ConstructorPage(driver)
+def driver(request):
+    browser = request.config.getoption("--browser")
+    headless = request.config.getoption("--headless")
 
-    with allure.step("Открытие формы логина кнопкой «Войти в аккаунт»"):
-        constructor.wait_for_enter_account_button()
-        constructor.click_enter_account_button()
+    drv = _create_driver(browser, headless)
+    base = BasePage(drv)
 
-    login_page = LoginPage(driver)
-    with allure.step("Выполнить логин"):
-        login_page.enter_credentials(api_user.email, api_user.password)
-        login_page.click_enter_button()
+    if headless:
+        base.set_window_size(1920, 1080)
+    else:
+        base.maximize_window()
 
-    with allure.step("Дождаться кнопки «Оформить заказ» на главной"):
-        constructor.wait_checkout_button()
+    base.change_url(Urls.URL_SERVICE)
+    yield drv
+    base.quit()
 
-    return driver
+@allure.step("Создание тестового юзера")
+@pytest.fixture
+def user():
+    u = User.register()
+    yield u
+    User.delete(u.get("accessToken"))
+
+@allure.step("Создание заказа.")
+@pytest.fixture
+def submit_order(user):
+    Order.submit_order(user)
+
+@allure.step("Добавление токенов авторизации в LocalStorage и очистка данных после теста")
+@pytest.fixture
+def upload_tokens_to_session(driver, user):
+    base = BasePage(driver)
+
+    base.set_local_storage_item("accessToken", user["accessToken"])
+    base.set_local_storage_item("refreshToken", user["refreshToken"])
+    base.refresh_page()
+
+    yield
+
+    base.clear_local_storage()
+    base.delete_all_cookies()
